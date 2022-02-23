@@ -1,0 +1,81 @@
+{
+    "type": "object",
+    "title": "Link Description",
+    "description": "The request-related [HATEOAS link](/api/rest/responses/#hateoas-links) information.",
+    "required": [
+        "href",
+        "rel"
+    ],
+    "properties": {
+        "href": {
+            "type": "string",
+            "description": "The complete target URL. To make the related call, combine the method with this [URI Template-formatted](https://tools.ietf.org/html/rfc6570) link. For pre-processing, include the `$`, `(`, and `)` characters. The `href` is the key HATEOAS component that links a completed call with a subsequent call.",
+            "x-visibility": {
+                "extent": "EXTERNAL"
+            }
+        },
+        "rel": {
+            "type": "string",
+            "description": "The [link relation type](https://tools.ietf.org/html/rfc5988#section-4), which serves as an ID for a link that unambiguously describes the semantics of the link. See [Link Relations](https://www.iana.org/assignments/link-relations/link-relations.xhtml).",
+            "x-visibility": {
+                "extent": "EXTERNAL"
+            }
+        },
+        "method": {
+            "type": "string",
+            "description": "The HTTP method required to make the related call.",
+            "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "HEAD",
+                "CONNECT",
+                "OPTIONS",
+                "PATCH"
+            ],
+            "x-visibility": {
+                "extent": "EXTERNAL"
+            }
+        },
+        "title": {
+            "type": "string",
+            "description": "The link title.",
+            "x-visibility": {
+                "extent": "INTERNAL"
+            }
+        },
+        "mediaType": {
+            "type": "string",
+            "description": "The media type, as defined by [RFC 2046](https://www.ietf.org/rfc/rfc2046.txt). Describes the link target.",
+            "x-publicDocsSchemaName": "media_type",
+            "x-visibility": {
+                "extent": "INTERNAL"
+            }
+        },
+        "encType": {
+            "type": "string",
+            "description": "The media type in which to submit the request data.",
+            "x-publicDocsSchemaName": "enc_type",
+            "default": "application/json",
+            "x-visibility": {
+                "extent": "INTERNAL"
+            }
+        },
+        "schema": {
+            "description": "The schema that describes the request data.",
+            "$ref": "link_schema.json",
+            "x-visibility": {
+                "extent": "INTERNAL"
+            }
+        },
+        "targetSchema": {
+            "description": "The schema that describes the link target.",
+            "x-publicDocsSchemaName": "target_schema",
+            "$ref": "link_schema.json",
+            "x-visibility": {
+                "extent": "INTERNAL"
+            }
+        }
+    }
+}
