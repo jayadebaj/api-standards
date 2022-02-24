@@ -15,10 +15,6 @@
         "description": "The orthography is unknown."
     },
     {
-        "value" : "Kana",
-        "description": "An angular form of Japanese writing for words of foreign origin."
-    },
-    {
         "value" : "Cyrl",
         "description": "The Slavic languages alphabet. Used in eastern Europe."
     },
@@ -77,6 +73,10 @@
     {
         "value" : "Jpan",
         "description": "The Japanese (alias for Han + Hiragana + Katakana) alphabet."
+    },
+    {
+        "value" : "Kana",
+        "description": "An angular form of Japanese writing for words of foreign origin."
     },
     {
         "value" : "Khmr",
