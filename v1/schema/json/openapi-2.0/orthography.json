@@ -67,6 +67,14 @@
         "description": "The Hebrew alphabet."
     },
     {
+        "value" : "Hira",
+        "description": "Japanese Hiragana."
+    },
+    {
+        "value" : "Hrkt",
+        "description": "Japanese syllabaries (alias for Hiragana + Katakana)."
+    },
+    {
         "value" : "Java",
         "description": "The Javanese alphabet."
     },
