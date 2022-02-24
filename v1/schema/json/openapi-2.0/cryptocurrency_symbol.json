@@ -22,10 +22,6 @@
             "description": "The ticker symbol for <b>Litecoin</b>. https://en.wikipedia.org/wiki/Litecoin."
         },
         {
-            "value": "PYPC",
-            "description": "The ticker symbol for <b>PayPal Coin</b>. https://engineering.paypalcorp.com/confluence/display/BCDC/PayPal+Digital+Coin+%28PPDC%29+-+USDP+-+Top+Down+View+of+Requirements."
-        },
-        {
             "value": "LINK",
             "description": "The ticker symbol for <b>Chainlink</b>. https://en.wikipedia.org/wiki/Chainlink_(blockchain)."
         },
