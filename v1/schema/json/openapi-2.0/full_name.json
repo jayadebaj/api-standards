@@ -1,7 +1,7 @@
 {
     "type": "object",
     "title": "Full Name",
-    "description": "The full name of the party, for example, the name of a cardholder.",
+    "description": "The full name of a person, for example, the name of a cardholder.",
     "x-pattern": {
         "$ref": "name_validation.json"
     },

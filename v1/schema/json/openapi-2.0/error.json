@@ -15,27 +15,20 @@
             "type": "string",
             "description": "The PayPal internal ID. Used for correlation purposes."
         },
-        "information_link": {
-            "type": "string",
-            "description": "The information link, or URI, that shows detailed information about this error for the developer.",
-            "readOnly": true
-        },
         "details": {
             "type": "array",
             "description": "An array of additional details about the error.",
             "items": {
-                "$ref": "./error_details.json",
-                "x-publicDocsSchemaName": "error_details"
+                "$ref": "./error_details.json"
             }
         },
         "links": {
             "type": "array",
-            "description": "An array of request-related [HATEOAS links](/api/rest/responses/#hateoas-links).",
+            "description": "An array of request-related [HATEOAS links](https://developer.paypal.com/api/rest/responses/#hateoas-links).",
             "readOnly": true,
             "items": {
-                "$ref": "link_description.json",
-                "x-publicDocsSchemaName": "link_description",
-                "readOnly": true
+	        "readOnly": true,
+                "$ref": "link_description.json"
             }
         }
     },

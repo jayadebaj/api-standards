@@ -10,8 +10,7 @@
             "$ref": "language.json"
         },
         "timezone": {
-            "$ref": "time_zone.json",
-            "x-publicDocsSchemaName": "time_zone"
+            "$ref": "time_zone.json"
         }
     },
     "required": [

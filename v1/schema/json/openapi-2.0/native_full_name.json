@@ -1,7 +1,7 @@
 {
     "type": "object",
     "title": "Full Name with orthography",
-    "description": "Full Name of an entity, use this in cases like native name on a bank account.",
+    "description": "Full Name of a person entity. Use this in cases like native name on a bank account.",
     "allOf": [
         {
             "$ref": "full_name.json"

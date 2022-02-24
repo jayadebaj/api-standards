@@ -13,7 +13,7 @@
         },
         "location": {
             "type": "string",
-            "description": "The location of the field that caused the error. Value is `body`, `path`, or `query`.",
+            "description": "The location of the field that caused the error. Value is `body`, `path`, `header`, or `query`.",
             "default": "body"
         },
         "issue": {
