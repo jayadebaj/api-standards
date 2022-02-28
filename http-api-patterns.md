@@ -1,4 +1,4 @@
-/
+
 # API Design Patterns And Use Cases
 
 
@@ -19,7 +19,7 @@ HTTP headers are written in camelCase + hyphenated syntax, e.g. Foo-Request-Id.
 
 ### Contributors
 
-[Sanjay Dalal](https://www.linkedin.com/in/sanjaydalal) (former member: PayPal API Platform), [Jason Harmon](https://es.linkedin.com/in/jasonhnaustin) (former member: PayPal API Platform), [Jayadeba Jena](https://www.linkedin.com/in/jayadeba-jena-1a6a0020) (PayPal API Platform), [Nikhil Kolekar](https://www.linkedin.com/in/nikhil-kolekar-28627a2/) (PayPal API Platform), [Gagan Maheshwari](https://www.linkedin.com/in/gaganmaheshwari) (former member: PayPal API Platform), [George Petkov](https://www.linkedin.com/in/gbpetkov) (former member: PayPal API Platform) and Andrew Todd (PayPal Credit).
+[Jayadeba Jena](https://www.linkedin.com/in/jayadeba-jena-1a6a0020) (Head of PayPal API Platform), [Sanjay Dalal](https://www.linkedin.com/in/sanjaydalal) (former member: PayPal API Platform), [Jason Harmon](https://es.linkedin.com/in/jasonhnaustin) (former member: PayPal API Platform), [Nikhil Kolekar](https://www.linkedin.com/in/nikhil-kolekar-28627a2/) (PayPal API Platform), [Gagan Maheshwari](https://www.linkedin.com/in/gaganmaheshwari) (former member: PayPal API Platform), [George Petkov](https://www.linkedin.com/in/gbpetkov) (former member: PayPal API Platform) and Andrew Todd (PayPal Credit).
 
 # Table Of Contents
 
@@ -56,14 +56,12 @@ HTTP headers are written in camelCase + hyphenated syntax, e.g. Foo-Request-Id.
     * [Service Controlled Flow](#service-controlled-flow)
     * [Asynchronous Operations](#asynchronous-operations)
     * [Saving Bandwidth](#saving-bandwidth)
-* [Bulk Operations](#bulk-operations)
-    * [Request Format](#bulk-request-format)
-    * [Response Format](#bulk-response)
-    * [Replace and Update Operation](#bulk-other)
+* [Bulk Operations](#bulk-semantics)
+    * [Anatomy of the Bulk Request and Response](#bulk-request-format)
+    * [Example](#bulk-example)
+    * [Persistent Bulk Requests](#bulk-persistent)
     * [HTTP Status Codes and Error Handling](#bulk-status-code) 
 * [Other Patterns](#other)
-
-
 
 <h2 id="create-resource">Create Resource</h2>
 
@@ -756,9 +754,6 @@ Content-Type: application/json
 
 {
 	"item_id": "CDZEC5MJ8R5HY",
-	"processing_state": {
-		"status": "PROCESSING"
-	},
 	"reference_id": "4766687568468",
 	"reference_type": "egflf465vbk7468mvnb",
 	"payout_amount": {
@@ -771,7 +766,7 @@ Content-Type: application/json
 				"href": "https://api.foo.com/v1/payments/referenced-payouts-items/CDZEC5MJ8R5HY",
 				"rel": "self",
 				"method": "GET"
-			}]
+	}]
 }
 ```
 
@@ -1341,251 +1336,213 @@ When an operation is carried out asynchronously, it is important to provide rele
 Some services always return very large response because of the nature of the domain they address. APIs of such services are sometimes referred as `Composite` APIs (they accumulate data from various sources or an aggregate of more than one services). For such APIs, sending the entire response drastically impacts performance of the API consumer, API server and the underlying network. In such cases, the client can ask the service to return partial representation using [`Prefer: return=minimal`](index.md#http-standard-headers) HTTP header. A service could send response with relevant HATEOAS links with minimal data to improve the performance. 
 
 
+<h2 id="bulk-semantics">Bulk operations</h2>
+
+The PPaaS bulk operation specification enable API clients to make a large collection of reosurce operations in a single request. The body of the bulk operation contains a collection of individual resource operations using one of the HTTP methods supported by the API server. For example, a bulk request MAY contain a set of homogeneous resource operations such as GET or POST to the same resource URI or a set of heterogeneous resource operation wherein each operation uses a different HTTP verb and to a different resource URI. 
+
+Both bulk request and response share the many set of attributes. Unless otherwise stated, each attribute below can be present in both request and response attributes.
+
+<h3 id="bulk-request-format">Anatomy of the Bulk Request and Response</h3>
+
+_The bulk request contains the following global elements:_
+
+* **`fail_on_error`**
+
+A boolean attribute indicating whether the bulk server can continue processing and disregard partial failures. The default behavior is to disregard partial failures. This property is a request only attribute.
+
+* **`process_in_sequence`** 
+
+A boolean value indicating whether the bulk server should process the items in the order they are specified in the request. The default behavior is to process items in any order.This property is a request only attribute.
+
+_Each bulk item in the bulk request body is a complex object with the following elements:_
 
 
-<h1 id="bulk-operations">Bulk Operations</h1>
+* **Operations:** Defines operations within a bulk job. Each operation corresponds to a single HTTP request against a Resource endpoint. This element is `REQUIRED` in a bulk request or response.
 
-This section describes guidelines for handling bulk calls in APIs. There are two different methods that you could use for bulk processing.
-
-* **Homogeneous:** operation involves request and response payload representing collection of resources of the same type. Same operation is applied on all items in the collection.
-
-* **Heterogeneous:** operation involves a request and response payloads that contain one or more requests and reponse payloads respectively. Each nested request and response represents an operation on a specific type of resource. However, the container request and response have one or more operations operating on one or more types of resources. It is recommended to use a public domain standard such as *[OData Batch Specification] [1]* in such cases.
-
-This section only addresses bulk processing of payloads using the homogenous method.
-
-
-
-<h2 id="bulk-request-format">Request Format</h2>
-
-Each bulk request is a single HTTP request to one target API endpoint. This example illustrates a bulk add operation. 
-
-**Example Request:**
-
-```
-POST /v1/devices/cards HTTP/1.1
-Host: api.foo.com
-Content-Length: total_content_length
-
-{
-	...
-
-  	"items": [
-	{
-		"account_number": "2097094104180012037",
-		"address_id": "466354",
-		"phone_id": "0",
-		"first_name": "M",
-		"last_name": "Shriver",
-		"primary_card_holder": false
-	},
- 	{
-		"account_number": "2097094104180012047",
-		"address_id": "466354",
-		"phone_id": "0",
-		"first_name": "M",
-		"last_name": "Shriver",
-		"primary_card_holder": false
-	},
- 	{
-		"account_number": "2097094104180012023",
-		"address_id": "466354",
-		"phone_id": "0",
-		"first_name": "M",
-		"last_name": "Shriver",
-		"primary_card_holder": false
-	}
-	]
-}
-```
-
-
-<h2 id="bulk-response">Response Format</h2>
-
-The response usually contains the status of each item. Failure of an individual item is described using *[Error Handling Guidelines](index.md#sampleresponse-bulk)* for an individual item. Given below is such an example.
-
-**Example Response:**
-
-```
-HTTP/1.1 200 OK
-
-{
-  ...
+	* **method:** The HTTP method of the current operation. Possible values are GET, POST, PUT, PATCH or DELETE. `REQUIRED`
+	
+   * **bulk_id:**
+The transient surrogate identifier that a bulk client specify in each bulk operation of the bulk request to create/track each operation as a distinct request. Clients could also use `bulk_id` to cross-reference a resource created by one operation in the bulk requests in subsequent resource operations. 
   
-  "batch_result":[
-	{
-		… <Success_body>
-	},
-	{ 
-  		"name": "VALIDATION_ERROR",
-   		"details": [
-   		    {
-   		        "field": "#/credit_card/expire_month",
-   		        "issue": "Required field is missing",
-   		        "location": "body"
-   		    }
-   		],
-   		"debug_id": "123456789",
-   		"message": "Invalid data provided",
-   		"information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
-	},
+   * **path:**` 
+   The Resource's relative path. If the method is POST the value must specify a resource type endpoint; e.g., /Users or /Groups whereas all other method values must specify the path to a specific resource; e.g., /Users/2819c223-7f76-453a-919d-413861904646. REQUIRED in a request.
+  
+  * **body:**
+  The request or response body as it would appear for an individual POST, PUT or PATCH resource operation. REQUIRED in a request when the HTTP method is POST, PUT, or PATCH.
+        
+  * **status:** 
+  A complex type that contains information about the success or failure of one operation within the bulk job. REQUIRED in a response
 
-	{ 
-   		"name": "VALIDATION_ERROR",
-   		"details": [
-   		    {
-       	                "field":"#/credit_card/currency",
-                        "value":"XYZ",
-                        "issue":"Currency code is invalid",
-                        "location":"body"
-                    }
-   		],
-   		"debug_id": "123456789",
-   		"message": "Invalid data provided",
-   		"information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
-	}
- ]
+
+
+<h3 id="bulk-example">Example</h3>
+
+
+**Request**
+
+```
+POST /v1/apis/batch
+Host: api.foo.com
+Accept: application/json
+Authorization: Bearer bearer_token
+Content-Length: content_length
+
+{
+
+        "operations": [
+          {
+            "method":"GET",
+            "path":"v1/customer/users/some-user-id1",
+            "headers":[
+              {
+                "name":"Foo",
+                "value":"Bar"
+              }
+            ],
+            "bulk_id":"f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+          },
+          {
+            "method":"GET",
+            "path":"v1/customer/users/some-user-id2",
+            "headers":[
+              {
+                "name":"Foo",
+                "value":"Bar"
+              }
+            ],
+            "bulk_id":"f81d4fae-7dec-11d0-a765-00a0c91e6bf1"
+          },
+          {
+            "method":"GET",
+            "path":"v1/customer/users/some-user-id3/addresses",
+            "headers":[
+              {
+                "name":"Foo",
+                "value":"Bar"
+              }
+            ],
+            "bulk_id":"f81d4fae-7dec-11d0-a765-00a0c91e6bf5"
+          }
+        ]
+
 }
 ```
 
-If the API supports atomic semantics to processing requests, there would be a single response code for the entire request with one or more errors as applicable.
-
-
-**Example Response:**
-
-**Note**: 
-
-```
-HTTP/1.1 400 Bad Request
-
-{ 
-   "name": "VALIDATION_ERROR",
-   "details": [
-      {
-         "field": "#/credit_card/currency",
-         "value": "XYZ",
-         "issue": "Currency code is invalid",
-         "location": "body"
-      }
-   ],
-   "debug_id": "123456789",
-   "message": "Invalid data provided",
-   "information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
-}
-]
-```
-
-<h2 id="bulk-other">Replace And Update</h2>
-
-Similar to bulk add, a service can support bulk update operation (replace using HTTP `PUT` or partial update using `PATCH`). This is possible provided the bulk add request also creates a first-class resource (e.g. a batch resource) that is uniquely identifiable using an id and returned to the client. The subsequent update operations could then use this id and perform updates on constituent elements of the batch as if an update is performed on a single resource. 
-
-For bulk replace and update operations, every effort should be made to make the execution atomic (all or nothing semantics). When it is not possible to make it so, the response should be similar to the partial response of bulk add operation described in the previous section. 
-
-
-<h2 id="bulk-status-code">HTTP Status Codes And Error Handling</h2>
-
-Tne following guidelines describe HTTP status code and error handling for bulk operations.
-
-* If atomicity is supported (all or nothing), use the regular REST API standards for error handling as there would be only one response code.
-* To support partial failures, you MUST return `200 OK` as the overall bulk processing status with individual status of each bulk item. In case of an error while processing a bulk item, the error description MUST follow the Error Handling Guidelines.
-* If asynchronous processing is supported, the API MUST return `202 Accepted` with a status URI for the client to monitor the request. The client may choose to ignore the status URI if it has registered itself with the API server for notification via webhooks.
-
-<h2 id="bulk-correlation">Response-Request Correlation in Error Scenarios</h2>
-
-
-For a failed item, you MAY use the *[JSON Pointer Expressions](#json-pointer-expression)* in the error response for that item using the `field` attribute of [`error.json`][2]. The caller can then map a response item's processing state to the exact request item in the original bulk request. Given below is an error response sample using the JSON Pointer Expressions.
-
-**Error Response Sample:**
+**Response**
 
 ```
 
 HTTP/1.1 200 OK
+Content-Type: application/json
 
-[
 {
-	… <Success_body>
-},
 
-{ 
-   "name": "VALIDATION_ERROR",
-   "details": [
-      {
-         "field": "/items/@account_number=='2097094104180012047'/address_id",
-         "issue": "Invalid Address Id for the account",
-         "location": "body"
-      }
-   ],
-   "debug_id": "123456789",
-   "message": "Invalid data provided",
-   "information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
-},
-
-{ 
-   "name": "VALIDATION_ERROR",
-   "details": [   
-   {
-       "field": "/items/@account_number=='2097094104180012023'/phone_id",
-       "value": "XYZ",
-       "issue": "Phone Id is invalid",
-       "location": "body"
-   }
-   ],
-   "debug_id": "123456789",
-   "message": "Invalid data provided",
-   "information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
+        "operations": [
+          {
+            "method": "GET",
+            "path": "v1/customer/users/some-user-id1",
+            "headers": [
+              {
+                "name": "Content-Length",
+                "value": "279"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "bulk_id": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+            "status": {
+              "code": "200"
+            },
+            "body": {
+              "id": "some-user-id1",
+              "preferred_language": "de-DE",
+              "timezone": "Europe/Berlin",
+              "citizenship": "BW",
+              "create_time": "2022-02-01T11:20:37Z"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "v1/customer/users/some-user-id2",
+            "headers": [
+              {
+                "name": "Content-Length",
+                "value": "313"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "bulk_id": "f81d4fae-7dec-11d0-a765-00a0c91e6bf1",
+            "status": {
+              "code": "404"
+            },
+            "body": {
+              "name": "RESOURCE_NOT_FOUND",
+              "message": "The specified resource does not exist.",
+              "debug_id": "blah_id"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "v2/customer/users/some-user-id3/addresses",
+            "headers": [
+              {
+                "name": "Content-Length",
+                "value": "1006"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "bulk_id": "f81d4fae-7dec-11d0-a765-00a0c91e6bf5",
+            "status": {
+              "code": "200"
+            },
+            "body": {
+              "addresses": [
+                {
+                  "address_line_1": "7160 West 54th Street",
+                  "admin_area_2": "St. Petersburg",
+                  "admin_area_1": "FL",
+                  "postal_code": "33713",
+                  "country_code": "US",
+                  "id": "some-user-id3"
+               }
+             ]
+           }
+        }
+    ]
 }
-]
-
-```
-
-The alternative is to create a response that contains the processing status of each item **in the same order** as it was received in the original request. The failed item would be represented using `error.json` with appropriate value in the `field` attribute.
-
-**Error Response Sample:**
-
-```
-
-HTTP/1.1 200 OK
-
-[
-{
-	… <Success_body>
-},
-
-{ 
-   "name": "VALIDATION_ERROR",
-   "details": [
-      {
-         "field": "/items/0/address_id",
-         "issue": "Invalid Address Id for the account",
-         "location": "body"
-      }
-   ],
-   "debug_id": "123456789",
-   "message": "Invalid data provided",
-   "information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
-},
-
-{ 
-   "name": "VALIDATION_ERROR",
-   "details": [   
-   {
-       "field": "/items/2/phone_id",
-       "value": "XYZ",
-       "issue": "Phone Id is invalid",
-       "location": "body"
-   }
-   ],
-   "debug_id": "123456789",
-   "message": "Invalid data provided",
-   "information_link": "http://developer.foo.com/apidoc/blah#VALIDATION_ERROR"
-}
-]
 
 ```
 
 
+<h3 id="bulk-persistent">Persistent Bulk Requests</h3>
+
+A bulk server implementation MAY support persistent bulk requests and implement the complete lifecycle operations for each bulk request (Create, Read, Update, Delete). In such cases, the server SHOULD implement the lifecycle operations via the `/batch-requests` URI. 
 
 
-<h3 id="other">Other Patterns</h3>
+<h3 id="bulk-status-code">Bulk HTTP status codes and Error handling</h3>
+
+The bulk server returns the following status code. The status codes describe the outcome of the overall bulk operation. Individual bulk items in the bulk request are processed like any other http requests by following the guidelines described in this style guide.
+
+* `200`- For successful execution of the bulk request. A 200 bulk response MUST contain the processing details of each bulk item.
+* `201`- If the server implements persistent bulk requests. A `201` respons SHOULD contain the HATEOAS GET link of the bulk request resource id (e.g. `v1/apis/batch-requests/{id}`)
+* `202`- When the bulk server processes the bulk request asynchonously. Refer to [Asynchronous Operations](#asynchronous-operations) for details around the asynchonous request processing pattern.
+* `400`- For malformed bulk requests- when requests don't comply with the bulk request schema.
+* `422`- For validation failures other than malformed requests.
+* `413`- When the bulk weight (or total number of bulk items) exceeds the maximum weight supported by the batch server.
+* `500`- For any server side errors.
+
+Other errors, such as authentication and authorization errors SHOULD be emitted as per the bulk server implementation.
+
+
+<h2 id="other">Other Patterns</h2>
 
 Designers of new services SHOULD refer to the [_RESTful Web Services Cookbook_][4] at Safari Books Online for other useful patterns.
 
