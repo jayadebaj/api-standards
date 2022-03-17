@@ -11,6 +11,10 @@ It is important to remember that your API is created for and consumed by human b
 # Table Of Contents
 * [Interpreting the Guidelines](#interpretation)
 	* [Terms Used](#terms)
+		* [Entity](#entity)
+		* [Service](#service)
+		* [Entity Lifecycle API Operations](#lifecycle)
+		* [Service API Operations](#service-op)
 * [Naming Conventions](##naming-conventions)
 	* [GraphQL URLs](#urls)
 	* [Fields](#fields)
